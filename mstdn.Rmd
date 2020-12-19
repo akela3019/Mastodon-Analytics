@@ -66,9 +66,9 @@ newtheme_void <- theme_void(base_family = frank_med) +
         plot.background = element_blank(),
         plot.title = element_text(size = 10, face = "plain", color = col_text))
 
-update_geom_defaults("text", list(family = frank_med, size = 3, color = col_text))
-update_geom_defaults("richtext", list(family = frank_med, size = 3, color = col_text))
-update_geom_defaults("text_repel", list(family = frank_med, size = 3, color = col_text))
+update_geom_defaults("text", list(family = frank_med, size = 2.7, color = col_text))
+update_geom_defaults("richtext", list(family = frank_med, size = 2.7, color = col_text))
+update_geom_defaults("text_repel", list(family = frank_med, size = 2.7, color = col_text))
 
 custom_palette <- brewer.pal(3, "Set2")
 ```
@@ -454,7 +454,7 @@ p_tolkien <- p_keyword_func(tolkien_kwords, "Tolkien", color = pal[3])
 p_malloy <- p_keyword_func(malloy_kwords, "Malloysical", color = "salmon2")
 ```
 
-```{r, fig.width = 7, fig.height = 7.5}
+```{r, fig.width = 6.5, fig.height = 7}
 plot_mat <- matrix(c(1, 1, 1, 1, 1, 1, 1, 1, 1,
                      1, 1, 1, 1, 1, 1, 1, 1, 1,
                      1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -507,5 +507,5 @@ g <- arrangeGrob(p_date + theme(plot.margin = margin(5, 5, 40, 7),
         plot.margin = margin(5, 5, -5, 5))
 
 g
-#ggsave("mstdn_stat.png", g, width = 7, height = 7.5)
+#ggsave("mstdn_stat.png", g, width = 6.5, height = 7)
 ```
