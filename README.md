@@ -1,3 +1,3 @@
 # Mastodon-Analytics
 
-![](/mstdn-stat.png?raw=true)
+![analytics](mstdn_stat.png)
