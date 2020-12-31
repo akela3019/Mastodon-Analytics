@@ -48,7 +48,7 @@ col_text2 <- '#f7f9fa'
 
 newtheme <- theme(
   text = element_text(family = frank_med),
-  plot.title = element_text(size = 10, face = "plain", color = col_text),
+  plot.title = element_text(size = 10, face = "plain", color = "white"),
   plot.background = element_blank(),
   legend.position = "right",
   legend.box.margin = margin(5, 0, 5, 5),
@@ -64,7 +64,7 @@ newtheme <- theme(
 newtheme_void <- theme_void(base_family = frank_med) +
   theme(legend.position = "none",
         plot.background = element_blank(),
-        plot.title = element_text(size = 10, face = "plain", color = col_text))
+        plot.title = element_text(size = 10, face = "plain", color = "white"))
 
 update_geom_defaults("text", list(family = frank_med, size = 2.7, color = col_text))
 update_geom_defaults("richtext", list(family = frank_med, size = 2.7, color = col_text))
@@ -165,7 +165,7 @@ rm_nodes <- names(sub_gs[which(sub_gs %in% small_sub)])
 routes_igraph2 <- delete_vertices(routes_igraph, rm_nodes)
 sub_gs2 <- components(routes_igraph2)$membership
 
-set.seed(3019)
+set.seed(1)
 
 network_df <- ggnetwork(routes_igraph2)%>%
   merge(data.frame(name = names(sub_gs2),
@@ -177,12 +177,16 @@ nodetext <- network_df %>%
   group_by(value)%>%
   mutate(n_toot = ceiling(n()/2))%>%
   arrange(name)%>%
-  slice(round(n()/2))%>%
-  cbind(label = c("WSC", "Chess 03", "TGC Book", "COVID-19", "GQ",
-                   "CoH", "snow", "MMAL", "Gondolin", "L5Y", "Ars\nNova"))%>%
+  slice(round(n()/2))%>% 
+  cbind(label = c("WSC", "Chess", "Comet", "COVID-19", "GQ\n",
+                   "CoH", "snow", "MMAL", "Tuor", "L5Y", 
+                  "Ars Nova", "star", "movie"))%>%
   mutate(label = paste0(label, " (", n_toot, ")"))
 
-p_network <- network_df %>%
+
+
+p_network <- 
+  network_df %>%
   mutate(value = value %% 4)%>%
   ggplot(aes(x = x, xend = xend + (xend - x)*0.3,
              y = y, yend = yend + (yend - y)*0.3)) +
@@ -194,12 +198,17 @@ p_network <- network_df %>%
                 aes(x = x + (x-0.5)*0.25, y = y + (y-0.5)*0.2,
                     label = label, color = as.factor(value %% 4)), 
                 size = 2.5, lineheight = 0.8,
-                nudge_x = c(-0.25, 0, -0.01, 0, -0.17, 
-                            -0.02, -0.18, 0.15, 0.48, 0.09, -0.15),
-                nudge_y = c(-0.05, 0.15, -0.24, -0.06, -0.19,
-                            0.05, 0.03, -0.14, 0.07, 0.07, -0.03))+
+                nudge_x = c(-0.2, -0.15, -0.12, 0.05, -0.1,
+                            0.15, -0.2, 0.1, 0, -0.1,
+                            0.28, -0.22, -0.2),
+                nudge_y = c(-0.04, -0.06, 0.06, -0.2, 0.1,
+                            0.02, -0.16, -0.13, -0.3, -0.05,
+                            -0.05, 0.07, -0.02),
+                angle = c(30, 0, 35, 60, 0,
+                          50, -45, 20, -45, 0,
+                          -60, 0, 0))+
   labs(title = "Toot Threads")+
-  scale_color_manual(values = c('#30a7fc', pal[-1], 'salmon2'))+
+  scale_color_manual(values = c('#30a7fc', pal[-1], 'salmon2', "purple"))+
   newtheme_void+
   theme(aspect.ratio = 1)
 ```
@@ -210,15 +219,20 @@ date_df <- mstdn_data_df %>%
   mutate(n = n()) %>% slice(1) %>% ungroup%>%
   mutate(n_7dayavg = rollmean(n, k = 7, na.pad = TRUE)) 
 
+date_text_df <- date_df %>% select(date, n) %>% ungroup()%>% 
+  filter(row_number() == 1 | n == max(date_df$n))%>% group_by(date) %>% slice(1)%>%
+  mutate(label = paste0("(", month(date, label = TRUE), " ", day(date), ")"))%>%
+  mutate(label = ifelse(n == max(date_df$n), paste(n, label),
+                        paste0("Joined ", label, "\n\u2193")))
+
+
 p_date <- date_df %>%
   ggplot(aes(x = date, y = n)) +
   geom_col(aes(fill = is_weekend), color = col_bkground, size = 0.2)+
   geom_line(aes(color = "7 Day Average", y = n_7dayavg), size = 0.6)+
-  geom_text(data = subset(date_df, n == max(date_df$n))%>%
-              mutate(label = paste0(n, " (" , month(date, label = TRUE), 
-                                    " ", day(date), ")")),
-            aes(y = n + 1, label = label), size = 2.4,
-            hjust = 0.08)+
+  geom_text(data = date_text_df,
+            aes(y = n + c(5, 1), label = label), size = 2.4,
+            hjust = c(0, 0.08), lineheight = 0.8, nudge_x = c(-1, 0))+
   scale_x_date(expand = expansion(add = c(1, 1)), date_labels = "%b %Y")+
   scale_y_continuous(expand = expansion(mult = c(0, 0.03)))+
   scale_color_manual(values = "lightblue1", name = NULL)+
@@ -226,7 +240,7 @@ p_date <- date_df %>%
   guides(fill = guide_legend(keywidth = 0.6, keyheight = 0.6, order = 1),
          color = guide_legend(keywidth = 0.7, keyheight = 0.6, order = 2))+
   newtheme +
-  theme(legend.position = c(0.18, 0.8),
+  theme(legend.position = c(0.5, 0.8),
         legend.spacing = unit(0, "mm"),
         legend.title = element_blank(),
         legend.background = element_blank(),
@@ -352,7 +366,7 @@ p_emoji <- emoji_hashtag_df %>%
   slice(1:min(n(), 5))%>%
   ggplot(aes(x = n, y = fct_reorder(icon.url, n))) +
   geom_col(width = 0.7, fill = pal[3])+
-  geom_text(aes(x = n + c(-3, rep(1, 4)), label = paste0(n, " (", prop, "%)"), 
+  geom_text(aes(x = n + c(-3, rep(3, 4)), label = paste0(n, " (", prop, "%)"), 
                 hjust = c(1, rep(0, 4))),
             color = c(col_bkground, rep("white", 4)))+
   geom_image(aes(x = -5, image = icon.url), size = 0.16, 
@@ -454,7 +468,7 @@ p_tolkien <- p_keyword_func(tolkien_kwords, "Tolkien", color = pal[3])
 p_malloy <- p_keyword_func(malloy_kwords, "Malloysical", color = "salmon2")
 ```
 
-```{r, fig.width = 6.5, fig.height = 7}
+```{r, fig.width = 7, fig.height = 7.5}
 plot_mat <- matrix(c(1, 1, 1, 1, 1, 1, 1, 1, 1,
                      1, 1, 1, 1, 1, 1, 1, 1, 1,
                      1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -476,7 +490,7 @@ footnote <- paste(c("Total No. of Toots: ", nrow(mstdn_data_df),
 
 title <- toupper("My Mastodon Analytics for 2020")
 
-g <- arrangeGrob(p_date + theme(plot.margin = margin(5, 5, 40, 7),
+g <- arrangeGrob(p_date + theme(plot.margin = margin(5, 15, 40, 7),
                                 plot.title = element_text(margin = margin(5, 5, -5, 5))), 
             p_wordcount + theme(plot.margin = margin(-25, 10, 5, 5)), 
             p_dist_wordcount + theme(plot.margin = margin(-25, 5, 5, -10)),
@@ -485,14 +499,14 @@ g <- arrangeGrob(p_date + theme(plot.margin = margin(5, 5, 40, 7),
                             plot.title = element_text(margin = margin(5, 5, 0, 5))), 
             p_emoji + theme(plot.margin = margin(-22, -30, 5, 0),
                             plot.title = element_text(hjust = 0.55, size = 9)), 
-            p_hashtag + theme(plot.margin = margin(-45, 5, 25, 5),
+            p_hashtag + theme(plot.margin = margin(-45, 5, 27, 5),
                               plot.title = element_text(size = 9)),
             p_network + theme(plot.margin = margin(-25, -3, -5, -15),
                               plot.title = element_text(hjust = 0.1)),
-            p_sondheim$p1 + theme(plot.margin = margin(0, 10, 27, 5)),
-            p_tolkien$p1 + theme(plot.margin = margin(-15, 10, 42, 5)),
-            p_malloy$p1 + theme(plot.margin = margin(-30, 10, 57, 5)),
-            p_sondheim$p2 + theme(plot.margin = margin(-5, -5, 25, -5)),
+            p_sondheim$p1 + theme(plot.margin = margin(-2, 10, 29, 5)),
+            p_tolkien$p1 + theme(plot.margin = margin(-17, 10, 44, 5)),
+            p_malloy$p1 + theme(plot.margin = margin(-32, 10, 59, 5)),
+            p_sondheim$p2 + theme(plot.margin = margin(-3, -5, 25, -5)),
             p_tolkien$p2 + theme(plot.margin = margin(-22, 5, 38, -5)),
             p_malloy$p2 + theme(plot.margin = margin(-33, -5, 53, -5)),
             top = textGrob(label = c(title, footnote), x = c(0.04, 0.99), hjust = c(0, 1),
@@ -507,5 +521,6 @@ g <- arrangeGrob(p_date + theme(plot.margin = margin(5, 5, 40, 7),
         plot.margin = margin(5, 5, -5, 5))
 
 g
-#ggsave("mstdn_stat.png", g, width = 6.5, height = 7)
+
+ggsave("mstdn_stat.png", g, width = 7, height = 7.5)
 ```
